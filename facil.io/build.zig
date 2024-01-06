@@ -1,5 +1,23 @@
 const std = @import("std");
 
+pub fn build(b: *std.build.Builder) !void {
+    const target = b.standardTargetOptions(.{});
+    // Standard release options allow the person running `zig build` to select
+    // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
+    const optimize = b.standardOptimizeOption(.{});
+
+    const use_openssl = b.option(bool, "openssl", "Use system-installed openssl for TLS support in zap") orelse blk: {
+        // Alternatively, use an os env var to determine whether to build openssl support
+        if (std.os.getenv("ZAP_USE_OPENSSL")) |val| {
+            if (std.mem.eql(u8, val, "true")) break :blk true;
+        }
+        break :blk false;
+    };
+
+    const facilio = try build_facilio(".", b, target, optimize, use_openssl);
+    _ = facilio;
+}
+
 pub fn build_facilio(
     comptime subdir: []const u8,
     b: *std.build.Builder,
